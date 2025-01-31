@@ -44,38 +44,24 @@ def generate_flower_chart(scores, student_name):
     
     return fig
 
-def generate_pdf(student_name, scores):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, f"Competentie Bloem Rapport voor {student_name}", ln=True, align='C')
-    pdf.ln(10)
-    
-    for key, value in scores.items():
-        pdf.cell(200, 10, f"{key}: {value}", ln=True)
-    
-    pdf_file = f"competentie_bloem_{student_name}.pdf"
-    pdf.output(pdf_file)
-    return pdf_file
-
-def send_email(student_name, recipient_email, pdf_file):
-    msg = EmailMessage()
-    msg['Subject'] = f"Competentie Bloem Rapport voor {student_name}"
-    msg['From'] = "jouw-email@example.com"
-    msg['To'] = recipient_email
-    
-    msg.set_content(f"Beste,\n\nHierbij het competentie rapport voor {student_name}.\n\nMet vriendelijke groet,\nHet beoordelingssysteem")
-    
-    with open(pdf_file, 'rb') as f:
-        msg.add_attachment(f.read(), maintype='application', subtype='pdf', filename=pdf_file)
-    
-    with smtplib.SMTP('smtp.example.com', 587) as server:
-        server.starttls()
-        server.login("jouw-email@example.com", "jouw-wachtwoord")
-        server.send_message(msg)
-
 st.set_page_config(page_title="Competentie Bloem Generator", page_icon="🌸", layout="wide")
 st.title("🌸 Competentie Bloem Generator 🌸")
+
+competentie_clusters = {
+    "LERAAR/EXPERT": [
+        "Kan een positief, veilig en creatief leerklimaat creëren",
+        "Kan verschillende werkvormen en groeperingsvormen toepassen",
+        "Kan motiveren, uitdagen, activeren en stimuleren tot creativiteit",
+        "Kan opdrachten helder formuleren, gerichte vragen stellen en doorvragen",
+        "Gebruikt een logische opbouw en structuur",
+        "Kan differentiëren in aanpak naargelang de noden",
+        "Stimuleert tot zelfstandigheid en kritische reflectie",
+        "Kan digitale leermiddelen inzetten",
+        "Kan reflecteren over proces en product en dit evalueren",
+        "Geeft positieve bekrachtiging en opbouwende feedback",
+        "Heeft een groot aanpassingsvermogen"
+    ]
+}
 
 if "step" not in st.session_state:
     st.session_state["step"] = 1
@@ -95,8 +81,11 @@ if st.session_state["step"] == 1:
 
 elif st.session_state["step"] == 2:
     st.subheader("Stap 2: Beoordeel de competenties")
-    competentiegebieden = ["LERAAR/EXPERT", "KUNSTENAAR/EXPERT", "ONDERZOEKER", "ORGANISATOR", "COMMUNICATOR", "SAMENWERKER"]
-    scores = {competentie: st.slider(f"{competentie}", 1, 5, 3) for competentie in competentiegebieden}
+    scores = {}
+    for cluster, competenties in competentie_clusters.items():
+        st.markdown(f"### {cluster}")
+        for competentie in competenties:
+            scores[competentie] = st.slider(f"{competentie}", 1, 5, 3)
     if st.button("Genereer Bloem →"):
         st.session_state["scores"] = scores
         st.session_state["step"] = 3
@@ -106,8 +95,5 @@ elif st.session_state["step"] == 3:
     st.subheader("Stap 3: Bekijk en exporteer je competentie bloem")
     fig = generate_flower_chart(st.session_state["scores"], st.session_state["student_name"])
     st.pyplot(fig)
-    pdf_file = generate_pdf(st.session_state["student_name"], st.session_state["scores"])
+    pdf_file = f"competentie_bloem_{st.session_state['student_name']}.pdf"
     st.download_button("📄 Download PDF Rapport", open(pdf_file, "rb"), file_name=pdf_file, mime="application/pdf")
-    if st.button("✉️ Verstuur per e-mail"):
-        send_email(st.session_state["student_name"], st.session_state["recipient_email"], pdf_file)
-        st.success("📧 E-mail succesvol verzonden!")
